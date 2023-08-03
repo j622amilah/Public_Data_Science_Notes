@@ -1,0 +1,1315 @@
+\documentclass[11pt, onecolumn]{article}			
+% \documentclass[font_size, pagestyle, page_column]{type_of_document}
+% (page 17-19)
+% This specifies what type of document you want to make, certain documents allow you to use certain commands and the formatting is different/specific for each type of document.  This document is called an article and it is the most standard type of document.
+
+
+% -----------------------------------------
+% Packages allow you to use extra commands (commands are always followed by a backslash (\). )  You can add as many packages as you like.  However, sometimes the order in which you list the packages can give errors.
+% -----------------------------------------
+\usepackage{graphicx}	% This package allow you to insert PostScript figures
+
+\usepackage{amsmath} 	% This is a typical math package - it allows you to type certain known math symbols, like exp for expoential 
+\usepackage{amssymb} 	% This is a typical math package
+\usepackage{amsthm}		% This is a typical math package
+
+\usepackage{color}		% This package allows you to use command with color, like colored text
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+% -----------------------------------------
+
+
+% -----------------------------------------
+% Can change/adjust the page margins (page 24-26 - has diagram of margins)
+% -----------------------------------------
+\topmargin	=10.mm		% beyond 25.mm
+\oddsidemargin	=0.mm		% beyond 25.mm
+\evensidemargin	=0.mm		% beyond 25.mm
+\headheight	=0.mm
+\headsep	=0.mm
+\textheight	=220.mm
+\textwidth	=165.mm
+\parindent  15.mm			% indent paragraph by this much
+\parskip     2.mm			% space between paragraphs
+
+\alph{footnote}		% make title footnotes alpha-numeric
+
+\setlength{\parindent}{0pt}   % no indentation for the entire document
+% -----------------------------------------
+
+
+
+
+\title{Create Machine Learning Models in Microsoft Azure}	% the document title
+
+%\author{Name \\	% author information
+%		Affiliation \\
+%		Affilication \\
+%		Affiliation}
+
+\date{\today}	% You can write any day or you can use \today, which inserts the current date
+
+% --------------------- end of the preamble ---------------------------
+
+
+\bibliographystyle{acm}		% Style of bibliography presentation
+
+% -----------------------------------------
+% This is the start of the body of the document.  The \begin{document} is required for all latex documents.
+% -----------------------------------------
+\begin{document}
+
+\pagenumbering{roman}	% Roman numerals from abstract to text
+
+\maketitle		% This command prints the title page
+
+\thispagestyle{empty}	% no page number on THIS page 
+
+
+% -----------------------------------------
+% Abstract
+% -----------------------------------------
+%\begin{abstract}			% beginning of the abstract
+
+%\end{abstract}				% end of the abstract
+% -----------------------------------------
+
+\newpage				% OPTIONAL: start a new page (it looks nice)
+
+\tableofcontents		% OPTIONAL: creates table of contents automatically
+
+\newpage				% OPTIONAL: start a new page
+
+\pagenumbering{arabic}	% You can specify the page numbers as a specific system/font.  Arabic is the default; can also use roman (lowercase Roman numerals), Roman (uppercase Roman numerals), alph (lowercase English letters), Alph (uppercase English letters)
+
+
+
+% ----------------------------------------------
+% DATA SCIENCE PROCESS 
+% ----------------------------------------------
+Steps for training an accurate model:
+0) Collect data (experiment, sensors, LLMs, etc)
+1) Divide the data into the 2 datasets: train and test
+2) Collect some additional data separately, call this the dev dataset (also known as developement set and hold out cross validation set); the dev dataset should have the same distribution as the test dataset. If the dev and test dataset distributions are different:
+
+[a] Pre-process the data before modeling and prediction: calculate the pdf for the train, test and dev datasets, and evaluate if they have similar mean and variance; if they do not one must normalize/scale the data so that they have similar distributions. 
+[b] Combine all the data from different distributions into a single dataset, where the large dataset is divided into train, test, and dev datasets.
+  
+3) Train the model using the train dataset
+4) Calculate prediction accuracy of the model using the train and test dataset. If the prediction accuracy of both are poor, perform hyperparameter tunning, and model tunning
+5) When the model gives the best result for both the train and test set, test the model on new unknown similar data (similar data that may have a distribution different than the train and test set) called the dev dataset.  
+
+Evaluate the model performance on the dev dataset using the following methods:
+
+[a] Evaluation of positive class prediction for one dev dataset: Use precision, recall, and F1 score. Create a table using the header: Classifier, dev dataset0 precision, dev dataset0 recall, dev dataset0 F1 score.
+
+[b] Evaluation of positive class prediction error for many dev datasets: If there are a lot of models that need their performance compared for different types of dev datasets, create a table using the header: Classifier, dev dataset0 error, dev dataset1 error, dev dataset2 error, average error. Compute the prediction error which is (1-F1 score)*100 for each type of dev dataset. Then take the average error for each model, across all dev datasets. Pick the model that has the lowest average error across dev datasets.
+
+[c] Evaluation of prediction accuracy and running time for one dev dataset: Create a table using the header: Accuracy, running time, cost=accuracy - weight*(running time) or optimizing evaluation metric. Select the model with the lowest optimizing metric value, similar to the idea of selecting based on the F1 score because it averages both recall and percision, while considering the largest accuracy a smallest running time. Use the set "Measurable success metric" that were set in the Business Objective to select a model that corresponds to the set goals.
+
+w0 = 0.9
+w1 = 0.9
+accuracy = [98, 97, 99, 97]
+runtime = [9, 3, 13, 1]
+memory = [9, 2, 9, 3]
+cost = []
+for ind, a in enumerate(accuracy):
+    cost.append(a - w0*(runtime[ind]) - w1*(memory[ind]))
+
+[D] Evaluation of models using a self-created evaluation metric that meets the criteria of the "Measurable success metric"
+
+6) If no model meets the criteria of the "Measurable success metric", reselect the dev data and/or evaluation metric.
+
+7) Optional benchmarking of model: Evaluate train and dev dataset performance with human-level performance and Bayes error
+
+
+
+
+
+
+
+\section{PySpark}
+
+PySpark Features:
+    In-memory computation
+    Distributed processing using parallelize
+    Can be used with many cluster managers (Spark, Yarn, Mesos e.t.c)
+    Fault-tolerant
+    Immutable
+    Lazy evaluation
+    Cache & persistence
+    Inbuild-optimization when using DataFrames
+    Supports ANSI SQL
+    
+Advantages
+    PySpark is a general-purpose, in-memory, distributed processing engine that allows you to process data efficiently in a distributed fashion.
+    Applications running on PySpark are 100x faster than traditional systems.
+    You will get great benefits using PySpark for data ingestion pipelines.
+    Using PySpark we can process data from Hadoop HDFS, AWS S3, and many file systems.
+    PySpark also is used to process real-time data using Streaming and Kafka.
+    Using PySpark streaming you can also stream files from the file system and also stream from the socket.
+    PySpark natively has machine learning and graph libraries.
+    
+PySpark Architecture
+Apache Spark works in a master-slave architecture where the master is called “Driver” and slaves are called “Workers”. When you run a Spark application, Spark Driver creates a context that is an entry point to your application, and all operations (transformations and actions) are executed on worker nodes, and the resources are managed by Cluster Manager.
+
+
+Modules and packages
+    PySpark RDD (pyspark.RDD)
+    PySpark DataFrame and SQL (pyspark.sql)
+    PySpark Streaming (pyspark.streaming)
+    PySpark MLib (pyspark.ml, pyspark.mllib)
+    PySpark GraphFrames (GraphFrames)
+    PySpark Resource (pyspark.resource) It’s new in PySpark 3.0
+    
+    
+% ----------------------------------------------
+% MODEL: known models
+% ----------------------------------------------
+Linear regression, 
+
+La régression linéaire simple modélise une relation linéaire entre une caractéristique et une étiquette généralement continue, permettant de prédire l'étiquette en fonction de la caractéristique.
+
+Le fait que le modèle s'attende à ce que les caractéristiques soient indépendantes est appelé une hypothèse de modèle. Lorsque les hypothèses se révèlent fausses, le modèle peut effectuer des prédictions trompeuses.
+
+Le R2 est une valeur comprise entre 0 et 1 qui nous indique dans quelle mesure un modèle de régression linéaire convient aux données. 
+
+
+
+Logistic regression, 
+
+
+
+Classification (SVM/SVC, KNN), 
+
+KNN 
+	- Finds clusters with training data
+
+
+
+
+Clustering
+
+
+
+% ----------------------------------------------
+% MODEL: techniques to create a model
+% ----------------------------------------------
+\section{Regualarization}
+
+Regularization is a technique to decrease variance, thus overfitting, however if the network is not large enough regularization could increase bias.
+
+Regularization is a technique where the estimated weights are made small such that the cost function, via gradient descent, decreases at each epoch. 
+
+
+There are many different regularization techniques :
+
+[0] Gradient descent with a regularization parameter (L1 regularization or L2 regularization)
+
+Selection of L2 regularization versus L1 regularization: L2 regularization term is w squared, multiplying two small w values together means that we "penalize" or emphasize the value of w , such that we can manipulate the result of the cost function more (amount it changes per iteration and speed it changes to the final result) than if the multiplicative term was not present (L1 regularization). 
+
+lambda is called the regularization parameter - you set this using your holdout set for cross-validation
+
+Regularization is when you add a component (either the one or two norm of w, multiplied by a constant) to your cost function such that your model parameters will be selected in a reduced way (as if your model was a simple model instead of a complex model).  Thus, allowing you to have less variance (overfitting to just the training data --> good prediction for both training and dev sets)
+
+the b term can be included in the cost function expression, but it will not drastically change the loss, so often it is not included; the b term is a scalar that shifts the data but it is not an attribute of the data itself so it is justifiable to omit it.
+
+
+L2-regularization is also called weight decay because when you do the gradient descent w-parameter update step, you are not only subtracting the previous w by the learning rate times the derivative.  You are also multiplying w by a value slightly less than 1, so w is decreasing ('decaying') faster than the typical gradient descent.
+
+The idea is that by tunning lambda (often times make lambda large), we zero out many node/neurons in the network (by making w small, close to zero) such that the model becomes simplified (a model similar to logistic regression) and thus does not/can not overfit the data.
+	- Insightful result: due to the fact that the weights are small, the output changes are small and controlled when the input data may be irratically changing; one may call this as having a "smoother model".
+	
+
+If lambda is too large, the model with have high bias so it is important to find the lambda that is just right to not have both high variance or bias.
+
+Another example is if lambda is large, then w is small causing z to be linear; this means that the result of the neural network will be linear and will not overfit the training data.
+
+	- Disadvantage:
+		- One needs to test a lot of values of the regularization parameter lambda, this makes searching over many values of lambda more computationally expensive.
+
+
+
+[Copy from jupyter_notebook]
+The standard way to avoid overfitting is called **L2 regularization**. It consists of appropriately modifying your cost function, from:
+$$J = -\frac{1}{m} \sum\limits_{i = 1}^{m} \large{(}\small  y^{(i)}\log\left(a^{[L](i)}\right) + (1-y^{(i)})\log\left(1- a^{[L](i)}\right) \large{)} \tag{1}$$
+To:
+$$J_{regularized} = \small \underbrace{-\frac{1}{m} \sum\limits_{i = 1}^{m} \large{(}\small y^{(i)}\log\left(a^{[L](i)}\right) + (1-y^{(i)})\log\left(1- a^{[L](i)}\right) \large{)} }_\text{cross-entropy cost} + \underbrace{\frac{1}{m} \frac{\lambda}{2} \sum\limits_l\sum\limits_k\sum\limits_j W_{k,j}^{[l]2} }_\text{L2 regularization cost} \tag{2}$$
+
+def compute_cost_with_regularization(A3, Y, parameters, lambd):
+    """
+    Implement the cost function with L2 regularization. See formula (2) above.
+    
+    Arguments:
+    A3 -- post-activation, output of forward propagation, of shape (output size, number of examples)
+    Y -- "true" labels vector, of shape (output size, number of examples)
+    parameters -- python dictionary containing parameters of the model
+    
+    Returns:
+    cost - value of the regularized loss function (formula (2))
+    """
+    m = Y.shape[1]
+    W1 = parameters["W1"]
+    W2 = parameters["W2"]
+    W3 = parameters["W3"]
+    
+    cross_entropy_cost = compute_cost(A3, Y) # This gives you the cross-entropy part of the cost
+    
+    ### START CODE HERE ### (approx. 1 line)
+    L2_regularization_cost = 1/m * lambd/2 * (np.sum(np.square(W1)) + np.sum(np.square(W2)) + np.sum(np.square(W3)) )
+    ### END CODER HERE ###
+    
+    cost = cross_entropy_cost + L2_regularization_cost
+    
+    return cost
+    
+def backward_propagation_with_regularization(X, Y, cache, lambd):
+    """
+    Implements the backward propagation of our baseline model to which we added an L2 regularization.
+    
+    Arguments:
+    X -- input dataset, of shape (input size, number of examples)
+    Y -- "true" labels vector, of shape (output size, number of examples)
+    cache -- cache output from forward_propagation()
+    lambd -- regularization hyperparameter, scalar
+    
+    Returns:
+    gradients -- A dictionary with the gradients with respect to each parameter, activation and pre-activation variables
+    """
+    
+    m = X.shape[1]
+    (Z1, A1, W1, b1, Z2, A2, W2, b2, Z3, A3, W3, b3) = cache
+    
+    dZ3 = A3 - Y
+    
+    ### START CODE HERE ### (approx. 1 line)
+    dW3 = 1./m * np.dot(dZ3, A2.T) + lambd/m * (W3)
+    ### END CODE HERE ###
+    db3 = 1./m * np.sum(dZ3, axis=1, keepdims = True)
+    
+    dA2 = np.dot(W3.T, dZ3)
+    dZ2 = np.multiply(dA2, np.int64(A2 > 0))
+    ### START CODE HERE ### (approx. 1 line)
+    dW2 = 1./m * np.dot(dZ2, A1.T) + lambd/m * (W2)
+    ### END CODE HERE ###
+    db2 = 1./m * np.sum(dZ2, axis=1, keepdims = True)
+    
+    dA1 = np.dot(W2.T, dZ2)
+    dZ1 = np.multiply(dA1, np.int64(A1 > 0))
+    ### START CODE HERE ### (approx. 1 line)
+    dW1 = 1./m * np.dot(dZ1, X.T) + lambd/m * (W1)
+    ### END CODE HERE ###
+    db1 = 1./m * np.sum(dZ1, axis=1, keepdims = True)
+    
+    gradients = {"dZ3": dZ3, "dW3": dW3, "db3": db3,"dA2": dA2,
+                 "dZ2": dZ2, "dW2": dW2, "db2": db2, "dA1": dA1, 
+                 "dZ1": dZ1, "dW1": dW1, "db1": db1}
+    
+    return gradients
+[Copy from jupyter_notebook]
+
+
+
+\section{Dropout}
+
+Dropout: a technique used to make the model simpiler (or smaller) and thus not overfit the data
+
+Procedures for Dropout:
+
+a. Inverted Dropout: the procedure for specifying the probability of nodes to "keep", meaning not zero out
+	- Procedural steps:
+		- Train the model using the train dataset without randomly removing hidden layer units: calculate the train accuracy and cost function results
+		- Train the model using the train dataset with Dropout, randomly removing hidden layer units: calculate the train accuracy and cost function results. Run the model once with Dropout, or run the model with Dropout several times and average the accuracy and cost function results.
+		- Compare the reduction in accuracy and cost function values using Dropout versus not using Dropout; Dropout should only be used on the training dataset, not the test dataset, because Dropout is involved with the model structure and thus training of the model. 
+		
+		
+	- Meaning of procedural step:
+		- You apply dropout (randomly eliminating units) and do not keep the 1/keep_prob factor in the calculations used in training
+		- An example is if keep_prob = 0.6, it means that at every iteration 40 percent of nodes from all hidden layers are made zero.
+
+[Copy from jupyter_notebook]
+def forward_propagation_with_dropout(X, parameters, keep_prob = 0.5):
+    """
+    Implements the forward propagation: LINEAR -> RELU + DROPOUT -> LINEAR -> RELU + DROPOUT -> LINEAR -> SIGMOID.
+    
+    Arguments:
+    X -- input dataset, of shape (2, number of examples)
+    parameters -- python dictionary containing your parameters "W1", "b1", "W2", "b2", "W3", "b3":
+                    W1 -- weight matrix of shape (20, 2)
+                    b1 -- bias vector of shape (20, 1)
+                    W2 -- weight matrix of shape (3, 20)
+                    b2 -- bias vector of shape (3, 1)
+                    W3 -- weight matrix of shape (1, 3)
+                    b3 -- bias vector of shape (1, 1)
+    keep_prob - probability of keeping a neuron active during drop-out, scalar
+    
+    Returns:
+    A3 -- last activation value, output of the forward propagation, of shape (1,1)
+    cache -- tuple, information stored for computing the backward propagation
+    """
+    
+    np.random.seed(1)
+    
+    # retrieve parameters
+    W1 = parameters["W1"]
+    b1 = parameters["b1"]
+    W2 = parameters["W2"]
+    b2 = parameters["b2"]
+    W3 = parameters["W3"]
+    b3 = parameters["b3"]
+    
+    # LINEAR -> RELU -> LINEAR -> RELU -> LINEAR -> SIGMOID
+    Z1 = np.dot(W1, X) + b1
+    A1 = relu(Z1)
+    ### START CODE HERE ### (approx. 4 lines)       # Steps 1-4 below correspond to the Steps 1-4 described above. 
+    D1 = np.random.rand(A1.shape[0], A1.shape[1])   # Step 1: initialize matrix D1 = np.random.rand(..., ...)
+    D1 = (D1 < keep_prob).astype(int)                                         # Step 2: convert entries of D1 to 0 or 1 (using keep_prob as the threshold)
+    A1 = A1 * D1                                    # Step 3: shut down some neurons of A1
+    A1 = A1*(1/keep_prob)                                 # Step 4: scale the value of neurons that haven't been shut down
+    ### END CODE HERE ###
+    Z2 = np.dot(W2, A1) + b2
+    A2 = relu(Z2)
+    ### START CODE HERE ### (approx. 4 lines)
+    D2 = np.random.rand(A2.shape[0], A2.shape[1])   # Step 1: initialize matrix D2 = np.random.rand(..., ...)
+    D2 = (D2 < keep_prob).astype(int)               # Step 2: convert entries of D2 to 0 or 1 (using keep_prob as the threshold)
+    A2 = np.multiply(A2, D2)                        # Step 3: shut down some neurons of A2
+    A2 = A2*(1/keep_prob)                                 # Step 4: scale the value of neurons that haven't been shut down
+    ### END CODE HERE ###
+    Z3 = np.dot(W3, A2) + b3
+    A3 = sigmoid(Z3)
+    
+    cache = (Z1, D1, A1, W1, b1, Z2, D2, A2, W2, b2, Z3, A3, W3, b3)
+    
+    return A3, cache
+
+
+def backward_propagation_with_dropout(X, Y, cache, keep_prob):
+    """
+    Implements the backward propagation of our baseline model to which we added dropout.
+    
+    Arguments:
+    X -- input dataset, of shape (2, number of examples)
+    Y -- "true" labels vector, of shape (output size, number of examples)
+    cache -- cache output from forward_propagation_with_dropout()
+    keep_prob - probability of keeping a neuron active during drop-out, scalar
+    
+    Returns:
+    gradients -- A dictionary with the gradients with respect to each parameter, activation and pre-activation variables
+    """
+    
+    m = X.shape[1]
+    (Z1, D1, A1, W1, b1, Z2, D2, A2, W2, b2, Z3, A3, W3, b3) = cache
+    
+    dZ3 = A3 - Y
+    dW3 = 1./m * np.dot(dZ3, A2.T)
+    db3 = 1./m * np.sum(dZ3, axis=1, keepdims = True)
+    dA2 = np.dot(W3.T, dZ3)
+    ### START CODE HERE ### (≈ 2 lines of code)
+    dA2 = dA2 * D2            # Step 1: Apply mask D2 to shut down the same neurons as during the forward propagation
+    dA2 /= keep_prob          # Step 2: Scale the value of neurons that haven't been shut down
+    ### END CODE HERE ###
+    dZ2 = np.multiply(dA2, np.int64(A2 > 0))
+    dW2 = 1./m * np.dot(dZ2, A1.T)
+    db2 = 1./m * np.sum(dZ2, axis=1, keepdims = True)
+    
+    dA1 = np.dot(W2.T, dZ2)
+    ### START CODE HERE ### (≈ 2 lines of code)
+    dA1 = dA1 * D1              # Step 1: Apply mask D1 to shut down the same neurons as during the forward propagation
+    dA1 /= keep_prob             # Step 2: Scale the value of neurons that haven't been shut down
+    ### END CODE HERE ###
+    dZ1 = np.multiply(dA1, np.int64(A1 > 0))
+    dW1 = 1./m * np.dot(dZ1, X.T)
+    db1 = 1./m * np.sum(dZ1, axis=1, keepdims = True)
+    
+    gradients = {"dZ3": dZ3, "dW3": dW3, "db3": db3,"dA2": dA2,
+                 "dZ2": dZ2, "dW2": dW2, "db2": db2, "dA1": dA1, 
+                 "dZ1": dZ1, "dW1": dW1, "db1": db1}
+    
+    return gradients
+
+[Copy from jupyter_notebook]
+
+
+"Apply dropout both during forward and backward propagation. - During training time, divide each dropout layer by keep_prob to keep the same expected value for the activations. For example, if keep_prob is 0.5, then we will on average shut down half the nodes, so the output will be scaled by 0.5 since only the remaining half are contributing to the solution. Dividing by 0.5 is equivalent to multiplying by 2. Hence, the output now has the same expected value. You can check that this works even when keep_prob is other values than 0.5. "
+
+
+
+
+
+\section{Vanishing Exploding gradients}
+
+Exploding or vanishing gradients occur when the slope dz (thus dw=1./m * np.dot(dZ1, X.T)) becomes suddenly large or small due:
+0. to the large and/or small difference between data points.
+1. deep neural networks (resnets) that propagate larger values to each successive hidden layer
+
+If gradients are too large, the cost function will exponetially increase and never allow for a minimum to be found.
+Similarly, if gradient are too small, the cost function will take miniscule steps to the minimun and never reach the minimum in an appropriate amount of time.
+
+Depending on how you initialize w, and the activation function the prediction y will either continue to increase or decrease.
+
+
+Considering a single neuron (z = w1x1 + w2x2 + ... + wnxn), the larger the number of features n into a single neuron (a=g(z)), the smaller the weight w should be in order to decrease the cost function per iteration (if w is small the features are equally weighted and the feature space becomes smooth, where a downward gradent is always found, thus allowing for the cost function minimum to be found). Thus to come up with an initialization value that considers this relationship the variance of w should equal a constant over n.
+
+Var(w) = constant/n, some people choose 1/n or 2/n
+
+w^[l] = np.random.rand(slope) * np.sqrt(2/n^[l-1])
+
+
+tanh(np.sqrt(1/n^[l-1]))
+
+Xavier initialization:
+np.sqrt(2/(n^[l-1] + n^[l]))
+
+
+def initialize_parameters_zeros(layers_dims):
+    """
+    Arguments:
+    layer_dims -- python array (list) containing the size of each layer.
+    
+    Returns:
+    parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
+                    W1 -- weight matrix of shape (layers_dims[1], layers_dims[0])
+                    b1 -- bias vector of shape (layers_dims[1], 1)
+                    ...
+                    WL -- weight matrix of shape (layers_dims[L], layers_dims[L-1])
+                    bL -- bias vector of shape (layers_dims[L], 1)
+    """
+    
+    parameters = {}
+    L = len(layers_dims)            # number of layers in the network
+    
+    for l in range(1, L):
+        ### START CODE HERE ### (≈ 2 lines of code)
+        parameters['W' + str(l)] = np.zeros((layers_dims[l], layers_dims[l-1]))
+        parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
+        ### END CODE HERE ###
+    return parameters
+
+
+def initialize_parameters_random(layers_dims):
+    """
+    Arguments:
+    layers_dims -- python array (list) containing the size of each layer.
+    
+    Returns:
+    parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
+                    W1 -- weight matrix of shape (layers_dims[1], layers_dims[0])
+                    b1 -- bias vector of shape (layers_dims[1], 1)
+                    ...
+                    WL -- weight matrix of shape (layers_dims[L], layers_dims[L-1])
+                    bL -- bias vector of shape (layers_dims[L], 1)
+    """
+    
+    np.random.seed(3)               # This seed makes sure your "random" numbers will be the as ours
+    parameters = {}
+    L = len(layers_dims)            # integer representing the number of layers
+    
+    for l in range(1, L):
+        ### START CODE HERE ### (≈ 2 lines of code)
+        parameters['W' + str(l)] = np.random.randn(layers_dims[l], layers_dims[l-1]) * 10
+        parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
+        ### END CODE HERE ###
+
+    return parameters
+    
+def initialize_parameters_he(layers_dims):
+    """
+    Arguments:
+    layer_dims -- python array (list) containing the size of each layer.
+    
+    Returns:
+    parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
+                    W1 -- weight matrix of shape (layers_dims[1], layers_dims[0])
+                    b1 -- bias vector of shape (layers_dims[1], 1)
+                    ...
+                    WL -- weight matrix of shape (layers_dims[L], layers_dims[L-1])
+                    bL -- bias vector of shape (layers_dims[L], 1)
+    """
+    
+    np.random.seed(3)
+    parameters = {}
+    L = len(layers_dims) # integer representing the number of layers
+     
+    for l in range(1, L):
+        ### START CODE HERE ### (≈ 2 lines of code)
+        parameters['W' + str(l)] = np.random.randn(layers_dims[l], layers_dims[l-1]) * np.sqrt(2./layers_dims[l-1])
+        parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
+        ### END CODE HERE ###
+        
+    return parameters
+
+-----------------------
+Prevention of exploding and vanishing gradients
+-----------------------
+0. Use cost function clipping to stop gradients from depassing a certain value
+1. Use strategic weight initialization
+
+
+
+\section{Gradient Checking}
+
+Using the 2-sided derivative is more accurate than the 1-sided derivative because more of the slope is used
+
+You calculate both the gradent descent and the numerical derivative, look at the difference between the two with the dtheta_approx as the "ground truth".  
+
+Then you can go back to db and dw to figure out when dtheta started to be different than dtheta_approx, to find a bug/etc
+
+
+
+\section{Exponentially weighted averages}
+
+
+
+
+
+
+\section{Momentum}
+Momentum usually helps, but given the small learning rate and the simplistic dataset, its impact is almost negligeable. Also, the huge oscillations you see in the cost come from the fact that some minibatches are more difficult thans others for the optimization algorithm.
+
+
+\section{RMSprop}
+
+
+\section{Adam}
+Adam on the other hand, clearly outperforms mini-batch gradient descent and Momentum. If you run the model for more epochs on this simple dataset, all three methods will lead to very good results. However, you've seen that Adam converges a lot faster.
+
+Some advantages of Adam include:
+
+    Relatively low memory requirements (though higher than gradient descent and gradient descent with momentum)
+    Usually works well even with little tuning of hyperparameters
+    
+    
+    
+\section{Mini-batch gradient descent}
+
+This session starts to talk about how you can optimize the neural network algorithms to train the models faster.  If you have a lot of data, it is necessary to have a fast process for creation/testing of models.
+
+You can get faster progress if you let gradent descent start training on parts of the data, even before gradient descent finishes.
+
+How to make your nn algorithm faster:
+1) Use vectorization : do not use for loops as the class already explains.  But what if the quantity of your data is large (m=5,000,000)?  Then this is not so effective, and you need to optimize the algorithm again.
+
+2) Use minibatches : divide your training set into smaller batches/chuncks called minibatches. For one minibatch do forward propagation using vectorization, compute cost with or withoout regularization; use back propagation to compute gradients to update w and b.
+
+Notation for mini-batch is : a^{ [layer]{minibatch}(example) }
+
+The training data X in mini-batch form is: 
+X_(n_x, m=5,000,000) = [x{1}, x{2}, ..., x{5000}] where 
+n_x is the number of hidden layer units in first layer, 
+m = number of examples, 
+batch_size = 1000,
+x{1} = [x(1), x(2), ..., x(1000)] is the first mini-batch
+
+Similarly, the predictor Y in mini-batch form is:
+X_(1, m=5,000,000) = [y{1}, y{2}, ..., y{5000}] where 
+m = number of examples, 
+y{1} = [y(1), y(2), ..., y(1000)] is the first mini-batch
+
+
+You should implement mini-batch gradient descent without an explicit for-loop over different mini-batches, so that the algorithm processes all mini-batches at the same time (vectorization). 
+
+-----------------------
+Steps to impliment mini-batch, using a vectorized notation to compute each of the mini-batches in independently and/or parallel:
+-----------------------
+0. Implement forward prop on the inputs (for i in range(1, 5000): Z{i}= w{i}X{i} + b{i}, A{i} = g{i}Z{i})
+1. Compute the cost
+	- When evaluating the cost of mini-batch gradient descent, in comparison to batch gradient descent, the cost will fluctuate more and be less smooth because each mini-batch has data that is a little different causing jumps in the progressive decrease of the cost 
+2. Backward propagation
+
+
+-----------------------
+Selection of mini-batch size interval
+-----------------------
+The batch_size can be between m=(number of examples) and 1:
+
+0. 1 means that one data point is in each mini-batch (called stochastic gradient descent)
+	- there is not a sufficient amount of representative data per batch, thus a poor prediction estimates for the data is obtained for short/normal periods of training time (an irratic non-smooth cost that decreases very slowly is obtained); one needs to iterate for a very long time to obtain the correct response 
+	- Because it needs to iterate for a long time, all speed-up benefits from vectorization are lost
+
+1. batch_size in-between
+	- a batch_size not too large or small will result in fast and reliable results
+	- Recommended batch_size: 
+		a) if dataset examples m <= 2000, use batch_size=m
+		b) if dataset examples m > 2000, use batch_size = 32 (2^{5}), 64 (2^{6}), 128 (2^{7}), 256 (2^{8}), 512 (2^{9}), 1024 (2^{10}). Batch_size values are selected because they are by power of 2, matching computer memory function/retrival thus allowing faster computation.   
+		
+2. m indicates that all the examples are in one mini-batch (called Batch gradient descent)
+	- This is the same as runing all the data, so no speed up benefits are obtained; if the dataset size is too large the computation would take too long to compute or have memory failure.
+    
+
+
+
+
+
+
+
+
+
+    
+    
+% ----------------------------------------------
+% MODEL TUNNING METRICS : after the model has been correctly implemented 
+% ----------------------------------------------
+\section{Hyperparameters}
+A hyperparameter is a parameter used in a machine learning algorithm that is set before the learning process begins
+
+
+Hyperparameter tuning is the process of choosing the hyperparameter that performs the best on our loss function, or the way we penalize an algorithm for being wrong.
+ 
+Grid search is the process of exhaustively trying every combination of hyperparameters. It takes all of the values we want to test and combines them in every possible way so that we test them using cross-validation.
+ 
+
+optimizer = tf.keras.optimizers.Adam(learning_rate)
+
+
+
+\subsection{How to select a good alpha value: learning rate decay}
+[0]
+alpha0 = 0.9
+t = count of steps taken
+alpha = np.exp(np.float64(-0.01*t)) * alpha0
+
+[1]
+decay_rate = 0.95 #  the decay_rate must be less than 1
+alpha = (decay_rate*t) * alpha0
+
+[2]
+alpha = (1/(1 + 3*t)) * alpha0
+
+[3]
+alpha = 1/np.sqrt(1 + t) * alpha0
+
+
+\subsection{How to select a good beta value (momentum, RMSprop, Adam)}
+[0] beta from 0 to 0.95
+t = np.arange(0, -3)
+beta = 10**t
+
+[1] beta from 0.9 (r=0) to 0.99 (r=1)
+r = np.random.rand()
+beta_2 = 1-10**(-r-1)
+
+
+
+
+
+
+
+% ----------------------------------------------
+% MODEL EVALUATION METRICS
+% ----------------------------------------------
+\section{Model Evaluation Metrics}
+
+
+
+\subsection{TP, TN, FP, FN}
+
+True means that the label value equals the model prediction result [T = (if (model == label))]
+False means that the label value does not equal the model prediction result [F = (if (model != label))]
+
+label=positive or negative
+
+
+
+A biased prediction
+
+Case 0: model needs improvement
+	F	T
+F	400	100
+T	400	100
+
+The model is often predicting false when the label is false or true; the model is poor because it is biased to predicting false.
+
+Case 1: data needs improvement, because it has too many samples in one class and the samples are not descriptive of the one class (there is a data distribution problem of the oversampled class) 
+	F	T
+F	400	400
+T	100	100
+
+The label is often false, but the model predicts true or false; the data is poor because the model can not distinguish between the true and false case.
+
+
+A non-biased prediction
+
+Case 0: model can not describe the data regardless of class
+	F	T
+F	100	400
+T	400	100
+
+The label and the model prediction values do not match often, for both positive and negative classes.
+
+
+Case 1: model can describe the data
+					predicted
+			class0					class1
+        	   (negative class)                         (positive class)
+        	       (false)                                  (true)
+	----------------------------------------------------------------------------------
+	class0		TN=400					FN=100
+   (negative class)
+        (false)
+label
+	class1		FP=100					TP=400
+   (positive class)
+        (true)
+
+The label and the model values match often, for both positive and negative classes
+
+
+
+
+
+\subsection{Accuracy/Exactitude}
+
+The percentage of examples/samples that the model predicted TRUE, label value and model prediction matched, considering all the label examples/samples.
+
+Accuracy = (TP+TN)/(TP+TN+FP+FN)
+
+
+
+
+
+\subsection{Precision}
+
+					predicted
+			class0					class1
+        	   (negative class)                         (positive class)
+        	       (false)                                  (true)
+	----------------------------------------------------------------------------------
+	class0		TN					FN
+   (negative class)
+        (false)
+LABEL
+	class1		FP  (Precision considers)		TP (Precision considers)
+   (POSITIVE class)
+        (true)
+
+
+Precision = TP/(TP+FP)
+
+
+Clear definition: It only considers model predicted results with respect to the [LABEL POSITIVE class], so it measures "How well the MODEL predicts [LABEL POSITIVE cases]"; the [model dictates correctness] because it is the model's responsibility to predict the positive cases assuming that the data has a good data distribution.
+
+If recall is bad the data is at fault, thus causing the precision to be likely bad too because precision depends on the assumption that the data has a good data distribution; precision is likely to be poor because the model can only perform as well as the data that it is given.
+
+
+
+
+Other definitions:
+[0] Precision is also known as specificity, it is the number of true positives divided by the true positives and the false positives.
+
+[1] Precision measures the rate of false positives
+
+[2] It only considers model predicted results related to label values with respect to the positive class, so it measures "How often the model says a case is positive; the model dictates correctness". 
+
+[3] Précision : proportion des prédictions de la classe spécifiée qui étaient correctes. Elle est mesurée par le nombre de vrais positifs (prédictions correctes de cette classe) divisé par le nombre total de prédictions de cette classe (y compris les faux positifs).
+
+[4] La précision fait référence à tous les cas prédits comme positifs et au nombre de cas réellement positifs. Cela signifie que la précision est égale aux vrais positifs, divisés par la somme des vrais positifs et des faux positifs.
+
+[5] Pour un <ÉTIQUETÉ><CLASS 1>, c'est le pourcentage que l'étiquette correspondé avec le modele par rapport au nombre total de fois que l'etiquette a apparaité.
+
+[6] Pour un LABEL<CLASS 1> , il s'agit du pourcentage de correspondance entre l'étiquette et la prédiction du modèle sur le nombre total d'apparitions de l'étiquette.
+
+[7] For a LABEL<CLASS 1> , this is the percentage match between the label and the model's prediction out of the total number of appearances of the label.
+
+[8] precision =  the percentage of data that are the positive class  =  TP/(TP + FP)
+
+FP = le actuelle etiquette etait class1, et le modele predit class0
+TP = le actuelle etiquette etait class1, et le modele predit class1
+
+
+
+
+
+\subsection{Recall}
+
+				PREDICTED
+			class0		class1 
+        	    (negative class)   (POSITIVE class)
+        	       (false)            (true)
+	---------------------------------------------------------
+	class0		TN		FN (Recall considers)
+   (negative class)
+        (false)
+label
+	class1		FP		TP (Recall considers)
+   (positive class)
+        (true)
+        
+        
+Recall = TP/(TP+FN) 
+
+
+Clear definition: It only considers model predicted results with respect to the [PREDICTED positive class], so it measures "How well the MODEL predicts [PREDICTED positive cases]; the [label dictates correctness] because it is responsible to give good 'data distribution'/distinctive data without bias". 
+
+If recall is bad the data is at fault, thus causing the precision to be likely bad too because precision depends on the assumption that the data has a good data distribution; precision is likely to be poor because the model can only perform as well as the data that it is given.
+
+
+
+Other definitions:
+[0] Recall is also known as sensitivity, and it can be calculated as the number of true positives divided by the true positives and the false negatives.
+
+[1] Recall measures false negative rate
+
+[2] Rappel : proportion d’instances réelles de cette classe qui ont été correctement prédites (vrais positifs divisés par le nombre total d’instances de cette classe dans le jeu de données de validation, y compris les faux négatifs ; les cas où le modèle a prédit incorrectement une classe différente).
+
+[3] Le rappel fait référence à tous les cas positifs et examine combien ont été prédits correctement. Cela signifie que le rappel est égal aux vrais positifs, divisés par la somme des vrais positifs et des faux négatifs.
+
+[4] Pour un <PREDICTED><CLASS 1> , c'est le pourcentage que le modèle était correct par rapport au nombre total de fois que le modèle a prédit.
+
+[5] Of all the images that are the positive class, are they correctly recognized as the positive class? Meaning that the model believes that the data is good or bad, so if recall is lower for one model than another it means that the lower recall model can not recognize the patterns in the data as well. 
+
+FN = the model predicted class1 and the actual label was class0
+TP = the model predicted class1 and the actual label was class1
+
+
+
+
+
+\subsection{F1 Score}
+
+If it is difficult to determine which model is better, based on recall and precision, then use an averaged recall and percision measure called the F1 score. 
+ 
+Score F1 : métrique combinée de précision et de rappel (calculée comme la moyenne harmonique de la précision et du rappel).
+
+F1 Score = 2/((1/Precision) + (1/Recall)), the F1 score is also called the harmonic meaning
+
+
+
+
+
+\subsection{Area under the Receiver Operating Characteristic (ROC) Curve (AUC)}
+
+The AUC is the False Positive Rate (x-axis) versus the True Positive Rate (TPR).
+
+The TPR=TP/(TP+FN) is the Recall=TP/(TP+FN), and the FPR=FP/(TN+FP).
+
+				PREDICTED
+			class0		class1 
+        	    (negative class)   (POSITIVE class)
+        	       (false)            (true)
+	---------------------------------------------------------
+	class0		TN (FPR)	FN (Recall=TPR considers)
+   (negative class)
+        (false)
+label
+	class1		FP (FPR)	TP (Recall=TPR considers)
+   (positive class)
+        (true)
+
+
+It measures how well the model can predict true positives and false positves with the given label, it is limited by the accuracy of the data/label.
+
+The goal is to have a model that has TP > FP, implying a high AUC because one can find a point on the curve where TP is greater than FP.
+
+
+	TP < FP			TP = FP			TP > FP
+	AUC < 0.5		AUC = 0.5		AUC > 0.5
+ 
+
+
+
+
+
+
+\subsection{K-fold, leave-P-out, holdout}
+
+Two types of cross-validation strategies are K-fold and leave-P-out. 
+
+K-fold and leave-P-out both divide the data into folds (parts/columns) and passes (combinations/rows), however K-fold does not have overlapping folds per pass. Due to the fact that leave-P-out has overlapping folds per pass, it is better suited for time-series data/forecasting where future data needs to be predicted using past data models. K-fold is preferable for non-time dependent data.
+
+0. Stratified K-fold cross-validation: used during classification problems to ensure a relatively representative distribution of the label class across each fold. Scikit-learn does this by default for both binary in multiclass classification problems.
+
+1. Repeated K-fold cross-validation:  This repeats K-fold cross-validation is specified a number of times. The advantage here is that each repetition has different split of folds, so it's a bit more robust to any nuances in data splitted.
+
+Leave-P-out:
+2. Leave-one-out cross-validation is the simplest form of leave-P-out, ET c'est 'Stratified K-fold cross-validation avec des "folds" que chevaucher. Each training set of the cross-validation process is created by taking all but one of the "folds" in the cross-validation set. So if we have the "folds" in our cross-validation set will have in unique training sets.
+When we validate the hyperparameter values, we used the single left out point that isn't in each training set as our validation set. Un negatif de ce procesus est il est intensif computationallement.
+
+3. Leave=P-out cross-validation when P is greater than one. This process is similar to leave-one-out cross-validation, but
+it leaves out a specified value of P "folds" as the validation set with each pass.
+
+Leave-P-out might sound similar to K-fold, but the key difference is that leave-P-out has overlapping training and validation sets across cross-validation processes, while K-folds folds do not overlap. Ce processus concerne les données de séries chronologiques, qu'il faut utiliser des points précédents pour s'entrainer le modèle et valider/tester le modèle sur des points du futur. Time-dependent rows are not independent of one another.  
+
+Holdout cross-validation
+randomly assign data points to the training set and the test set
+
+
+
+\section{Feature importance}
+
+Model explainers use statistical techniques to calculate feature importance.
+
+Local explanations for individual predictions, quantifying the extent to which each feature influenced the decision to predict each of the possible label values.
+
+Classification:
+L’importance globale des caractéristiques quantifie l’importance relative de chaque caractéristique du jeu de données de test dans son ensemble. Elle permet de comparer de manière générale le degré d’influence de chaque caractéristique du jeu de données sur la prédiction.
+
+Regression: 
+Pour un modèle de régression, il n’y a aucune classe. Les valeurs d’importance locale indiquent donc simplement le niveau d’influence de chaque caractéristique sur l’étiquette scalaire prédite.
+
+MimicExplainer : cet explicateur crée un modèle de substitution global qui correspond approximativement à votre modèle entraîné et qui peut être utilisé pour générer des explications. Ce modèle explicable doit avoir le même type d’architecture que votre modèle entraîné (par exemple, linéaire ou basée sur une arborescence).
+
+Mimic Explainer is based on the idea of training global surrogate models to mimic opaque-box models. A global surrogate model is an intrinsically interpretable model that's trained to approximate the predictions of any opaque-box model as accurately as possible.
+
+
+TabularExplainer : cet explicateur agit comme un wrapper autour de différents algorithmes d’explication SHAP et choisit automatiquement le mieux adapté à l’architecture de votre modèle. (globale et locale importance)
+
+PFIExplainer : cet explicateur de l’importance des caractéristiques par permutation analyse l’importance des caractéristiques en lisant de façon aléatoire les valeurs des caractéristiques et en mesurant l’impact sur les performances de prédiction. (globale importantce)
+	- feature permutation
+
+
+SHAP (SHapley Additive exPlanations) 
+SHAP applies this concept to the input features of a neural network by computing the average contribution of each feature to the model's output across all possible combinations of features. For text specifically, SHAP splits on words in a hierarchical manner, treating each word or token as a feature. This produces a set of attribution values that quantify the importance of each word or token for the given prediction. The final attribution map is generated by visualizing these values as a heatmap over the original text document. SHAP is a model-agnostic method and can be used to explain a wide range of deep learning models, including CNNs, RNNs, and transformers. Additionally, it provides several desirable properties, such as consistency, accuracy, and fairness, making it a reliable and interpretable technique for understanding the decision-making process of a model.
+
+
+\subsection{Scaling}
+
+normalisation: division by the maximum value to scale all value from [0, 1]
+(feat[q] - np.min(feat))/(np.max(feat) - np.min(feat))
+
+positive normalization
+shift_up = [i - np.min(feat) for i in feat]
+scaled_data_posnorma = [q/np.max(shift_up) for q in shift_up]  # positive normalization 
+
+standardisation
+	- soustrait la moyenne des valeurs, puis divise le résultat par l’écart type.
+	- subtracts the mean of the values, then divides the result by the standard deviation.
+scaled_data_standardization = [(q - np.mean(feat))/np.std(feat) for q in feat]  # standardization
+
+
+
+\subsection{Bias-variance tradeoff}
+
+-------------------------------------------------------
+
+bias = the difference/error between average model prediction and the actual value for the training set data.
+
+To determine the bias, measure the error of the training dataset prediction value minus actual value. Additionally, to determine if the model can perform well on "new, known data" (data from the same distribution as the train set), measure the error of the test dataset prediction value minus actual value. The training and test accuracy should both be high, conversely implying that the training and test prediction error should both be low. Low training and test prediction error means that the model, created from using the training data, was best tunned such that it can predict both familiar (data used to create the model) and new (data not used to create the model) data from the same distribution; in other words the trained model can accurately generalize to new data within the same data distribution.   
+
+[1] High bias IMPLIES Underfitting (Error assuming Bayesian optimal error is 0 percent: train=15, dev=16 OR Accuracy: train=85, dev=84)
+	- This implies high error between actual and predicted values, thus poor predictiion performance
+	- Models that are too simplistic, and do not capture data relationships resulting in high error for training/test/dev performance 
+
+
+How to improve high bias:
+a) Make the NN deeper
+b) Increase the number of units in each hidden layer
+
+-------------------------------------------------------
+
+Underfitting
+	- when the estimate y does not pass through/fit all the data points
+	- when the estimate y does not separate data in feature space optimally
+	- when the model can not capture complex relationships
+
+How to improve underfitting:
+Data changes:
+0) Feature engineering: Increase the number of features to describe independent patterns in the data, that may influence the predictor.
+1) Feature engineering: Scale, also called normalize, the features to a certain range, such that no one feature is larger than another feature; data/features have similar scale and thus variance. If the data is unnormalized, gradent descent will need many steps to reach the minimum, for a large feature space created by large and small valued features, because the cost function value will ocsilate alot before it finds weight w values that minimize the cost function.  But if the data is normalized, the feature space is smaller and thus gradient descent needs less steps to find ideal weight w values that minimize the cost function, thus reducing training time; normalized features create a smaller feature space to search through.
+
+Model changes:
+0) Train the model for a longer time-period; longer epoch time
+1) Use a more complex model to capture data trends
+	a) Make the NN deeper, meaning add more hidden layers
+	b) Increase the number of units in each hidden layer; test using relu or different activation functions per layer
+2) Optimization of cost function: Use a more adapted cost function such that the cost function is optimized using gradent descent including momentum, RMSprop, and Adam
+3) Initialize the weights of W and b better (He, Xavier)
+
+-------------------------------------------------------
+
+variance = the variability of model predictions for a given data point; the spread of predictions. 
+
+To determine the variance, measure the error of dev dataset prediction value minus actual value, compared with the error of training dataset prediction value minus actual value. The dev and training accuracy should both be high, conversely implying that the dev and training prediction error should both be low.  
+
+[2] High Variance IMPLIES Overfitting (Error assuming Bayesian optimal error is 0 percent: train=1, dev=11 OR Accuracy: train=99, dev=89)
+	- Models that are too complex, and capture specific trends that fit well to training data but do not generalize to test/dev data
+
+-------------------------------------------------------
+
+Overfitting
+	- when the model captures data relationships that are too specific, the model is too complex, thus predictions are not accurate for general data
+	- When the model can not generalize to other data that it was not trained on. Model generalization is model performance on data that the model was not trained on (ie: test dataset that is data that has the same distribution as the train dataset and that was likely collected at the same time as the train dataset, validation dataset that may or may not have the same distribution as the train dataset and that was likely collected at a different time than the train dataset).
+	- when there are too many model parameters in comparison to data, so the data values can not force/constrain the parameters to be more precise
+	- Physical occurence: good model fit for train, but poor fit for test/dev
+
+How to improve Overfitting:
+Data changes:
+0) Data augmentation: Collect more training data to train the model so that all data trends are taken into account
+1) Data augmentation: create new data variations from existing data, such as inverting, rotating, or zooming in on an image. This makes the training data redunant but it will reduce overfitting and it will better account/predict for inputs that distorted (vertially inverted, angled, etc).
+2) Feature engineering: Decrease the number of features to prevent non-independent and/or non-distinct patterns in the data; less features allow more generalized distinction across various type of collected datasets (identify a basic underlying trend for a type of dataset regardless of variance/noise to precisely indentify the predictor). 
+3) Feature engineering: Scale, also called normalize, the features to a certain range, such that one feature is larger than another feature. If the data is unnormalized, your gradent descent will need many steps to reach the minimum because it will ocsilate alot before it stays stable.  But if the data is normalized, it will take less steps to reach the minimum. To normalize means your data/features have similar scale and thus variance.
+
+Model changes:
+0) Early stopping: Train the model for a shorter time-period. Early stopping is a technique where training is interupted when a small but ideal weight w is found, that gives low prediction error.
+1) Use a simplier or less complicated model - plot the data and pick an appropriate order/type model, try a different neural network (but DO NOT increase the number of hidden layers (ie: do not make a deeper/bigger neural network))
+2) Optimization of cost function: Use regularization because the loss is forced to reduce in time, thus forcing the weights to be tunned such that the model distinguishes ("learns") the training data. In other words it reduces the magnitude/value of the weights per feature, such that each feature contributes equally (or a small amount) to predicting y thus finding a global minimum instead of a local minimum dictated by largest feature. Regularization is a technique to decrease variance; bias could increase if the network is not large enough.
+
+Correcting overfitting will likely "hurt"/decrease training set performance, because it limits the ability of the network to perfectly fit ("overfit") to the training set.  since it ultimately gives better test accuracy, it is helping your system. "
+
+-------------------------------------------------------
+
+[3]  High bias and high variance (Error assuming Bayesian optimal error is 0 percent: train=15, dev=30 OR Accuracy: train=85, dev=70)
+	- model underfits the training data and more poorly fits the dev data 
+
+-------------------------------------------------------
+
+[4] Low bias and low variance (Error assuming Bayesian optimal error is 0 percent: train=0.5, dev=1 OR Accuracy: train=99.5, dev=99)
+	- The model fits/predicts the training data and dev data well: If train and dev sets are from the same distribution, and the bias is low, the variance will be low too
+
+
+-----------------------
+bias-variance trade-off for non-big data VS Big data
+-----------------------
+Non-big data has a bias-variance trade-off: the more data/complexity implies low bias and high variance, and inversely less data/complexity implies high bias and low variance)
+
+Big data there is less of a bias-variance trade-off because : 1) for large networks w/regularization - bias is decreased w/o changing variance (the only negative is long computational time), 2) for models with a lot of data - variance is increased w/o changing bias
+
+
+-----------------------
+Optimal error : Bayes Error
+-----------------------
+Optimal error that a model can give for data is called "base error". If training and dev set are from the same distribution, and the base error is small, the difference between the error for the training set and the dev set tells about the variance of the training data used for the model
+
+
+
+\section{Human-level performance}
+
+Machine learning systems are compared to human level performance for 2 reasons:
+0. machine learning systems work better than before and can compete with accurate human predictions,
+1. machine learning system workflows are more effective, thus allowing human-level performance to be mimicked
+
+
+Facts about human-level performance and model performance:
+0. Human-level performance is a little less good than Bayes optimal error. Bayes optimal error (also known as Bayesian optimal error or Bayes error) is a measure that quanifies the highest achievable model prediction accuracy for a dataset; not all datasets can be predicted with 100\% accuracy.
+1. Human-level performance is very accurate, eventhough it is less accurate than Bayes error, thus if a model surpasses human -level performance the model is almost perfect and improvements should not be made to avoid risk of overfitting on training data.
+2. Model performance can surpass human-level performance, as mentioned, however it can never logically surpass Bayes optimal error. If model performance is numerically better than Bayes error it means that the model is overfitted on the training data.
+
+
+When evaluating model performance, it is necessary to compare model performance with: 0. training/test error, 1. dev error, 2. human-level error, 3. Bayes error; training error should be similar to test error so training error could only be used. Model performance can be compared with human level performance and Bayes error as follows:
+
+0. Calculate model training accuracy, model dev accuracy, and human prediction accuracy
+1. Calulate the error for each.
+2. Write a table of error percentage
+Human error	1\%
+Train error 	8\%
+dev error	10\%
+3. Take differences
+diff_train_human = abs(train error - human error) 	7
+diff_dev_train = abs(dev error - train error)		2
+4. If diff_train_human > diff_dev_train AND diff_train_human > 1, reduce bias (training error).
+
+If diff_train_human > diff_dev_train AND diff_train_human < 1, because model performance progress decreases when one is close to human level performance do not improve training error because it would likely end up overfitting the training data to get more perfect performance; improve the dev error to reduce the variance. If there is error difference less than 0.5-1, the model is sufficently trained.
+
+If diff_train_human < diff_dev_train, reduce variance (dev error). 
+
+5. diff_train_bayes = abs(train error - bayes error) AND diff_train_bayes < 1, called the avoidable bias, implies that:
+	- A trained model is more believable if it has some error with respect to bayes error, because of risk of overfitting
+	- There will always be some residual error that you model has due to inherent noise in the data with respect to Bayes optimal error (ie: just like bayes error is rarely 0).
+If there is error difference less than 0.5-1, the model is sufficently trained.
+
+
+If your model is less good than human-level performance apply the three ideas :
+	- get labeled data from humans and, reverse engineer making a model that is "like" a human
+	- Gain insight from manual error analysis: Why did a person get this right?
+	- Do better analysis of bias/variance
+
+
+
+
+
+
+
+
+
+
+    
+    
+% ----------------------------------------------
+% DATA EVALUATION
+% ----------------------------------------------
+\section{Sampling bias}
+When a sample does not represent the entire population; when this happens selection the data at random to avoid bias.
+
+\section{Unbiased sample}
+A sample that represents the measured population.
+
+\section{Observer bias}
+Non-accurate measure because the sample observation was perceived a little different
+
+\section{Interpretation bias}
+The interpretation of events differently due to experiences
+
+\section{Confirmation bias}
+The tendency to research or interpret information in a certain way to confirm an existing belief
+
+
+\section{Training, test, dev datasets}
+
+Purpose of the:
+0. train dataset (known model data that the model is made from), is data used to train the model
+
+1. test dataset (new, known data used for target model performance) = It allows for the created model from training data, to be tested/cross validated such that optimal hyperparameters can be found. It tests the model performance, such that if the model performs poorly the test set is used as a requirement/goal measure. Hyperparameter tuning is used such that train and test performance is best. 
+
+2. dev dataset (new, unknown data used to test the best found model) = tests the best found hyperparameter tunned model, on unknown/unseen data. Because the data is unknown to the model, the results give a fair/unbiased estimate of the model performance
+
+
+
+-----------------------
+Typical data splits for Non Big-data and Big-data:
+-----------------------
+- Non Big-data (100-10,000 samples): 60\% for model developement (train), 20\% to cross validate the model (test), and 20\% to test the model (dev)
+
+- Big data (> 1,000,000 samples):  98\% (train), 1\% (test), 1\% (dev) OR 99.5\% (train), 0.4\% (test), 0.1\% (dev)
+
+
+
+-----------------------
+Train/test/dev data distribution:
+-----------------------
+It is ideal to have training and dev/test sets come from the same distribution
+
+A lot of times it is not possible to have the same type of data (data with the same distribution (ie: image resolution, noise quality, etc) for the training and dev/test sets
+
+If this is not possible, it is best to have the dev and test sets come from the same distribution
+
+If you only have a dev set and not a test set - train on the training set and fit your model to the dev set. Problem is that by improving your model based on the dev set, you no longer have an unbiased estimation/prediction of how well your model performs
+	- if you only have the train and dev set (not test set), most people call the dev set the test set.
+	- if you only have the train and dev set (not test set), as was mentioned, you only have an estimate of how well the model best performs for known data. You do not know how well the model performs for unknown data.
+	
+
+
+
+
+
+
+\section{Bayes error}
+
+Bayes error is a measure to understand the significance of model accuracy. It is a measure that quanifies the highest achievable model prediction accuracy for a dataset; not all datasets can be predicted with 100\% accuracy.
+
+probability of y_i = [0, 1] where 0 is 100 percent chance of class 0 occuring, and 1 is 100 percent chance of class 1 occuring
+
+Bayes error = (1/n) * \sum [min(probability of y_i, 1-(probability of y_i))]
+	- Bayes error is the minimum possible error that a model can acheive. 
+	- if the Bayes Error is non-zero, then the two classes have some overlaps, and the best model will make some wrong predictions. Reasons for have non-zero Bayes error : 0) poor data quality (ie: blurry images, noisy values),  1) mislabed data (inconsistent labeling, wrong labeling), 2) data generating process is inherently stochastic/probablistic chance of an event occurring, 3) information missing from the feature vectors (null values)
+	
+
+One can also calculate the summed probablity for a class Y occuring for the next X samples
+Bayes error = (1/X) * (p_of_class_Y_for_samp0 + p_of_class_Y_for_samp1 + ...)
+
+Accuracy is the inverse of Bayes error.
+Accuracy = (1/n) * \sum (y_predicted - y_actual))
+
+
+Bayes Error allows for one to determine if the dataset is poor (large class overlap across samples) or not (small class overlap across samples)
+ 
+[A] Best acheiveable model accuracy
+- Calculate the amount of Bayes Error for the dataset, the best reliable model accuracy for the data is (1-Bayes error)*100.
+- Only promise model accuracy of (1-Bayes error)*100
+
+[B] Bias-variance tradeoff 
+
+A desireable model fit for a dataset should be :
+0) (1-train_accuracy) - Bayes_Error should be low
+
+1) (1-test_accuracy) - (1-train_accuracy) should be low 
+
+
+Is the Performance of My Deep Network Too Good to Be True? A Direct Approach to Estimating the Bayes Error in Binary Classification (2023), ICLR 2023. https://arxiv.org/abs/2202.00395
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{}
+
+Error rate parity
+
+
+Demographic parity
+
+
+Limited Group Loss
+
+
+Equalized odds
+
+
+Bandit Policy
+
+
+Truncation Selection Policy
+
+
+Mid-Stop Policy
+
+
+Wait Policy
+
+Backfill
+
+
+Selection rate - A comparison of the number of positive cases per subpopulation.
+Selection rate is the percentage of positive predictions for the overall population.
+
+
+False positive and false negative rates - how the selected performance metric compares for the subpopulations, including *underprediction* (false negatives) and *overprediction* (false positives).
+
+
+
+prediction disparity
+If recall reduces, the disparity reduces
+
+\section{differential privacy}
+
+differential privacy = a technique that protects an individual's data from this type of exposure
+
+Differential privacy seeks to protect individual data values ​​by adding statistical “noise” to the analysis process. The noise ensures that the data aggregations remain statistically consistent with the actual data values, allowing for random variation, but it prevents individual values ​​from being determined from the aggregated data.
+
+Differential privacy is a technique that is designed to preserve the privacy of individual data points by adding "noise" to the data. The goal is to ensure that enough noise is added to provide privacy for individual values while ensuring that the overall statistical makeup of the data remains consistent, and aggregations produce statistically similar results as when used with the original raw data.
+
+One way for a person to protect their personal data is simply to not participate in a study. This is called the “opt-out” option.
+0. Even if you decide not to participate, a study can still produce results that affect you. (ie: pay more money and you don't participate, etc)
+1. The benefits of participating in the study may outweigh any negative impact
+2. The only way opt-out will work for all participants is if no one takes part, rendering the whole study pointless!
+
+An epsilon value is added to determine the amount of noise (or privacy risk)
+A low (small) epsilon value means that more noise is added to data, so data values ​​are not accurate.
+
+An epsilon value is added to determine the amount of noise (or privacy risk)
+A high (large) epsilon value means that less noise is added to the deal, we keep the precision but we lose the confidentiality
+
+
+\section{References}
+
+\begin{itemize}
+\item DeepLearning.AI Deep Learning Specialization : https://www.coursera.org/specializations/deep-learning
+\item Microsoft Azure Data Scientist Associate (DP-100) Specialization : https://www.coursera.org/professional-certificates/azure-data-scientist
+\end{itemize}
+
+\end{document}				% REQUIRED
+
